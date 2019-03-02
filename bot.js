@@ -38,9 +38,20 @@ class MyBot {
         // Conversation Data Property for ConversationState
         this.conversationData = conversationState.createProperty(CONVERSATION_DATA_PROPERTY);
         // Properties for UserState
-        this.userData = userState.createProperty(USER_DATA_PROPERTY);
+        //this.userData = userState.createProperty(USER_DATA_PROPERTY);
         this.riskData = userState.createProperty(RISK_DATA_PROPERTY);
         this.investmentData = userState.createProperty(INVESTMENT_DATA_PROPERTY);
+
+        this.changes = {};
+        this.userID = "";
+        this.userData = {
+            name: "",
+            age: "",
+            gender: "",
+            education: "",
+            major: "",
+            eTag: '*',
+        } 
 
         // Add prompts that will be used in dialogs
         this.dialogSet = dialogSet;
@@ -57,11 +68,17 @@ class MyBot {
 
     async displayPayout (step) {
             console.log("Display Payout");
-            // Retrieve user object from UserState storage
-            const userInvestData = await this.investmentData.get(step.context, {});
-            const user = await this.userData.get(step.context, {});
 
-            await step.context.sendActivity(`Hallo ${user.name}. Am Ausgang kannst du dir deine Bezahlung von ${userInvestData.payout} abholen.` );
+            // Read UserData from DB
+            var user = await this.memoryStorage.read([this.userID]);
+            console.log(user);
+
+            // await step.context.sendActivity(`Hallo ${user[this.userID].name}, du bist ${user[this.userID].name} Jahre alt, ${user[this.userID].age}, hast ${user[this.userID].education} und studierst ${user[this.userID].major}.`);
+            try {
+                await step.context.sendActivity(`Hallo ${user[this.userID].name}. Am Ausgang kannst du dir deine Bezahlung von ${user[this.userID].investData.payout} abholen.` );
+            }
+            catch (e) { await step.context.sendActivity("Leider habe ich von dir keine Daten vorliegen.")}
+            
     }
 
     /**
@@ -93,6 +110,10 @@ class MyBot {
                     // context.activity.membersAdded === context.activity.recipient.Id indicates the
                     // bot was added to the conversation, and the opposite indicates this is a user.
                     if (turnContext.activity.membersAdded[idx].id !== turnContext.activity.recipient.id) {
+                        console.log("User added");
+                        this.userID = turnContext.activity.membersAdded[idx].id;
+                        //this.userID = "123451"
+                        console.log("UserID: " + this.userID);
                         // Start the dialog.
                         await dc.beginDialog('displayPayout');
                     }
