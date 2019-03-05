@@ -75,7 +75,7 @@ class MyBot {
 
             // await step.context.sendActivity(`Hallo ${user[this.userID].name}, du bist ${user[this.userID].name} Jahre alt, ${user[this.userID].age}, hast ${user[this.userID].education} und studierst ${user[this.userID].major}.`);
             try {
-                await step.context.sendActivity(`Hallo ${user[this.userID].name}. Am Ausgang kannst du dir deine Bezahlung von ${user[this.userID].investData.payout} abholen.` );
+                await step.context.sendActivity(`${user[this.userID].investData.payout}` );
             }
             catch (e) { await step.context.sendActivity("Leider habe ich von dir keine Daten vorliegen.")}
             
