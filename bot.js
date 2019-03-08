@@ -42,16 +42,6 @@ class MyBot {
         this.riskData = userState.createProperty(RISK_DATA_PROPERTY);
         this.investmentData = userState.createProperty(INVESTMENT_DATA_PROPERTY);
 
-        this.changes = {};
-        this.userID = "";
-        this.userData = {
-            name: "",
-            age: "",
-            gender: "",
-            education: "",
-            major: "",
-            eTag: '*',
-        } 
 
         // Add prompts that will be used in dialogs
         this.dialogSet = dialogSet;
@@ -69,13 +59,15 @@ class MyBot {
     async displayPayout (step) {
             console.log("Display Payout");
 
+            // Get userID
+            var userID = step.options;
+
             // Read UserData from DB
-            var user = await this.memoryStorage.read([this.userID]);
-            console.log(user);
+            var user = await this.memoryStorage.read([userID]);
 
             // await step.context.sendActivity(`Hallo ${user[this.userID].name}, du bist ${user[this.userID].name} Jahre alt, ${user[this.userID].age}, hast ${user[this.userID].education} und studierst ${user[this.userID].major}.`);
             try {
-                await step.context.sendActivity(`${user[this.userID].investData.payout}` );
+                await step.context.sendActivity(`${user[userID].investData.payout}` );
             }
             catch (e) { await step.context.sendActivity("Leider habe ich von dir keine Daten vorliegen.")}
             
@@ -111,11 +103,10 @@ class MyBot {
                     // bot was added to the conversation, and the opposite indicates this is a user.
                     if (turnContext.activity.membersAdded[idx].id !== turnContext.activity.recipient.id) {
                         console.log("User added");
-                        this.userID = turnContext.activity.membersAdded[idx].id;
-                        //this.userID = "123451"
-                        console.log("UserID: " + this.userID);
-                        // Start the dialog.
-                        await dc.beginDialog('displayPayout');
+                        var userID = turnContext.activity.membersAdded[idx].id;
+                        
+                        
+                        await dc.beginDialog('displayPayout', userID);
                     }
                 }
             }
