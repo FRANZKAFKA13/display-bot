@@ -64,7 +64,9 @@ class MyBot {
 
             // Read UserData from DB
             var user = await this.memoryStorage.read([userID]);
+            
             user = user[userID];
+            console.log(user);
 
             // await step.context.sendActivity(`Hallo ${user[this.userID].name}, du bist ${user[this.userID].name} Jahre alt, ${user[this.userID].age}, hast ${user[this.userID].education} und studierst ${user[this.userID].major}.`);
             try {
@@ -105,8 +107,7 @@ class MyBot {
                     if (turnContext.activity.membersAdded[idx].id !== turnContext.activity.recipient.id) {
                         console.log("User added");
                         var userID = turnContext.activity.membersAdded[idx].id;
-                        
-                        
+                                                
                         await dc.beginDialog('displayPayout', userID);
                     }
                 }
