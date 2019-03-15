@@ -64,10 +64,11 @@ class MyBot {
 
             // Read UserData from DB
             var user = await this.memoryStorage.read([userID]);
+            user = user[userID];
 
             // await step.context.sendActivity(`Hallo ${user[this.userID].name}, du bist ${user[this.userID].name} Jahre alt, ${user[this.userID].age}, hast ${user[this.userID].education} und studierst ${user[this.userID].major}.`);
             try {
-                await step.context.sendActivity(`${user[userID].investData.payout}` );
+                await step.context.sendActivity(`${user.payout}` );
             }
             catch (e) { await step.context.sendActivity("Leider habe ich von dir keine Daten vorliegen.")}
             
