@@ -5,6 +5,10 @@
 const path = require('path');
 const restify = require('restify');
 
+
+// Node.js utility library
+const util = require('util')
+
 // Read botFilePath, botFileSecret and DB information from .env file
 // Note: Ensure you have a .env file and include botFilePath and botFileSecret.
 const ENV_FILE = path.join(__dirname, '.env');
@@ -14,6 +18,11 @@ require('dotenv').config({ path: ENV_FILE });
 
 // Einbindung externer Datenbank
 const { CosmosDbStorage } = require('botbuilder-azure');
+const { BlobStorage } = require('botbuilder-azure');
+
+// Include chatlog functionality
+const { AzureBlobTranscriptStore  } = require('botbuilder-azure');
+const { TranscriptLoggerMiddleware } = require('botbuilder-core');
 
 // Import required bot services. See https://aka.ms/bot-services to learn more about the different parts of a bot.
 const { BotFrameworkAdapter, ConversationState, UserState, MemoryStorage, AutoSaveStateMiddleware } = require('botbuilder');
@@ -22,17 +31,33 @@ const { BotConfiguration } = require('botframework-config');
 // Import Dialogs extension
 const { DialogSet } = require('botbuilder-dialogs');
 
+
 // Local browser storage
-//const memoryStorage = new MemoryStorage();
+const memoryStorageLocal = new MemoryStorage();
 
 
 //Add CosmosDB (greift auf Informationen in .env-Datei zu)
-const memoryStorage = new CosmosDbStorage({
+/* const memoryStorage = new CosmosDbStorage({
     serviceEndpoint: process.env.ACTUAL_SERVICE_ENDPOINT, 
     authKey: process.env.ACTUAL_AUTH_KEY, 
     databaseId: process.env.DATABASE,
     collectionId: process.env.COLLECTION
+}) */
+
+
+// Add Blobstorage
+const memoryStorage = new BlobStorage({
+    //containerName: 'roboadvisory-blob',
+    //storageAccountOrConnectionString: 'DefaultEndpointsProtocol=https;AccountName=roboadvisorytabledb;AccountKey=jwe+SHecBWzvrlTCVBYf9P20tpmzxK+12ISicOOnqSWQPiTh/bCpH5vU/vdS79A01+cZwRdReQRYsyluucBMbA==;EndpointSuffix=core.windows.net',
+    containerName: process.env.CONTAINER_NAME, 
+    storageAccountOrConnectionString: process.env.CONNECTION_STRING, 
 })
+
+// The transcript store has methods for saving and retrieving bot conversation transcripts.
+let transcriptStore = new AzureBlobTranscriptStore({
+    containerName: process.env.CONTAINER_NAME_TRANSCRIPT, 
+    storageAccountOrConnectionString: process.env.CONNECTION_STRING,
+});
 
 // ConversationState and UserState
 const conversationState = new ConversationState(memoryStorage);
@@ -93,25 +118,40 @@ const adapter = new BotFrameworkAdapter({
    appPassword: endpointConfig.appPassword || process.env.microsoftAppPassword
 });
 
+
+// Create the middleware layer responsible for logging incoming and outgoing activities
+// into the transcript store.
+//var transcriptMiddleware = new TranscriptLoggerMiddleware(transcriptStore);
+//adapter.use(transcriptMiddleware);
+
+
 // Scheinbar nötig für CosmosDB wirft bei local speicher aber error
-adapter.use(new AutoSaveStateMiddleware(conversationState));
-adapter.use(new AutoSaveStateMiddleware(userState));
+//adapter.use(new AutoSaveStateMiddleware(conversationState));
+//adapter.use(new AutoSaveStateMiddleware(userState));
+
+
 
 
 // Catch-all for any unhandled errors in your bot.
 adapter.onTurnError = async (context, error) => {
     // This check writes out errors to console log .vs. app insights.
-    console.error(`\n [onTurnError]: ${error}`);
+    
+    //console.error(`\n [onTurnError]: ${error}`);
     // Send a message to the user
-    context.sendActivity(`Oops. Something went wrong!`);
-    // Clear out state
+    //context.sendActivity("error: " + error);
+    context.sendActivity(util.inspect(error, false, null, false /* enable colors */));
+    //context.sendActivity(`Oops. Something went wrong!`);
+    
+    /* // Clear out state
     await conversationState.load(context);
     await conversationState.clear(context);
     await userState.load(context);
     await userState.clear(context);
     // Save state changes.
     await conversationState.saveChanges(context);
-    await userState.saveChanges(context);
+    await userState.saveChanges(context); */
+    await bot.onTurn(context)
+    
 };
 
 

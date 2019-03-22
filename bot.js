@@ -16,8 +16,7 @@ const fs = require('fs');
 // The accessor names for the conversation data and user profile state property accessors.
 const CONVERSATION_DATA_PROPERTY = 'conversationData';
 const USER_DATA_PROPERTY = 'userData';
-const RISK_DATA_PROPERTY = 'userRiskData';
-const INVESTMENT_DATA_PROPERTY = 'userInvestmentData';
+
 
 
 class MyBot {
@@ -36,12 +35,8 @@ class MyBot {
         this.memoryStorage = memoryStorage;
 
         // Conversation Data Property for ConversationState
-        this.conversationData = conversationState.createProperty(CONVERSATION_DATA_PROPERTY);
-        // Properties for UserState
-        //this.userData = userState.createProperty(USER_DATA_PROPERTY);
-        this.riskData = userState.createProperty(RISK_DATA_PROPERTY);
-        this.investmentData = userState.createProperty(INVESTMENT_DATA_PROPERTY);
-
+        this.conversationDataAccessor = conversationState.createProperty(CONVERSATION_DATA_PROPERTY);
+        
 
         // Add prompts that will be used in dialogs
         this.dialogSet = dialogSet;
@@ -60,19 +55,24 @@ class MyBot {
             console.log("Display Payout");
 
             // Get userID
-            var userID = step.options;
+            const userID = step.options;
 
             // Read UserData from DB
-            var user = await this.memoryStorage.read([userID]);
+            const user = await this.memoryStorage.read([userID]);
             
-            user = user[userID];
+            //user = user[userID];
+            console.log("Gelesene UserDaten im DisplayBot");
             console.log(user);
 
             // await step.context.sendActivity(`Hallo ${user[this.userID].name}, du bist ${user[this.userID].name} Jahre alt, ${user[this.userID].age}, hast ${user[this.userID].education} und studierst ${user[this.userID].major}.`);
             try {
-                await step.context.sendActivity(`${user.payout}` );
+                await step.context.sendActivity(`${user[userID].payout}` );
             }
-            catch (e) { await step.context.sendActivity("Leider habe ich von dir keine Daten vorliegen.")}
+            catch (e) { 
+                console.log("Error beim Lesen der Daten im Display Bot");
+                console.log(e);
+                await step.context.sendActivity("Leider habe ich von dir keine Daten vorliegen.")
+                }
             
     }
 
@@ -83,7 +83,7 @@ class MyBot {
      * @param {TurnContext} on turn context object.
      */
     async onTurn(turnContext) {
-        let dc = await this.dialogSet.createContext(turnContext);
+        const dc = await this.dialogSet.createContext(turnContext);
 
         //await logMessageText(this.memoryStorage, turnContext, this.userState);
 
@@ -105,10 +105,15 @@ class MyBot {
                     // context.activity.membersAdded === context.activity.recipient.Id indicates the
                     // bot was added to the conversation, and the opposite indicates this is a user.
                     if (turnContext.activity.membersAdded[idx].id !== turnContext.activity.recipient.id) {
-                        console.log("User added");
-                        var userID = turnContext.activity.membersAdded[idx].id;
+                        
+                        const conversationData = await this.conversationDataAccessor.get(turnContext, {});
+                        
+                        
+                        console.log("User added DisplayBot. URL ID:");
+                        conversationData.URLparam = turnContext.activity.membersAdded[idx].id;
+                        console.log(conversationData.URLparam);
                                                 
-                        await dc.beginDialog('displayPayout', userID);
+                        await dc.beginDialog('displayPayout', conversationData.URLparam);
                     }
                 }
             }
